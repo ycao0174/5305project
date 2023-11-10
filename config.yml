@@ -1,0 +1,71 @@
+# Network Configuration
+audionet:
+  audionet_name: TDANet # Name of the audio network model
+  audionet_config:
+    out_channels: 128 # Number of output channels
+    in_channels: 512 # Number of input channels
+    num_blocks: 16 # Number of blocks in the network
+    upsampling_depth: 5 # Depth of upsampling layers
+    enc_kernel_size: 4 # Encoder kernel size in milliseconds
+    num_sources: 2 # Number of audio sources to separate
+
+# Loss Function Configuration
+loss:
+  train:
+    loss_func: PITLossWrapper # Loss function for training
+    sdr_type: pairwise_neg_snr # Type of Signal-to-Distortion Ratio used in training
+    config:
+      pit_from: pw_mtx # Permutation Invariant Training from pairwise matrix
+      threshold_byloss: true # Apply threshold based on loss
+  val:
+    loss_func: PITLossWrapper # Loss function for validation
+    sdr_type: pairwise_neg_sisdr # Type of Signal-to-Distortion Ratio used in validation
+    config:
+      pit_from: pw_mtx # Permutation Invariant Training from pairwise matrix
+      threshold_byloss: false # No threshold based on loss during validation
+
+# Training Configuration
+training:
+  system: AudioLightningModule # System module for training
+  gpus: [0] # GPU indices to use
+  parallel: ddp # Distributed Data Parallel training
+  epochs: 10 # Number of training epochs
+  early_stop:
+    monitor: val_loss/dataloader_idx_0 # Metric to monitor for early stopping
+    mode: min # Mode for early stopping (minimizing the monitored value)
+    patience: 30 # Patience epochs before early stop
+    verbose: true # Enable verbose logging for early stopping
+  SpeedAug: False # Speed augmentation disabled
+  
+# Optimizer Configuration
+optimizer:
+  optim_name: adam # Name of the optimizer
+  lr: 0.001 # Learning rate
+  weight_decay: 0 # Weight decay factor
+
+# Scheduler Configuration
+scheduler: 
+  sche_name: ReduceLROnPlateau # Name of the learning rate scheduler
+  sche_config:
+    patience: 15 # Patience epochs for reducing LR
+    factor: 0.5 # Factor by which the LR is reduced
+
+# Data Module Configuration
+datamodule:
+  data_name: Libri2MixDataModule # Name of the data module
+  data_config:
+    train_dir: DataPreProcess/Libri2Mix/tr # Training data directory
+    valid_dir: DataPreProcess/Libri2Mix/cv # Validation data directory
+    test_dir: DataPreProcess/Libri2Mix/tt # Testing data directory
+    n_src: 2 # Number of audio sources
+    sample_rate: 8000 # Audio sample rate
+    segment: 3.0 # Length of audio segments in seconds
+    normalize_audio: false # Disable audio normalization
+    batch_size: 1 # Batch size
+    num_workers: 8 # Number of workers for data loading
+    pin_memory: true # Enable pinning memory for faster data transfer to GPU
+    persistent_workers: false # Disable persistent workers
+
+# Experiment Configuration
+exp:
+  exp_name: TDANet # Name of the experiment
