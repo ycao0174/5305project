@@ -390,7 +390,7 @@ class Recurrent(nn.Module):
         return x
 
 
-class TDANet(BaseModel):
+class TDANetli(BaseModel):
     def __init__(
         self,
         out_channels=128,
@@ -401,7 +401,7 @@ class TDANet(BaseModel):
         num_sources=2,
         sample_rate=16000,
     ):
-        super(TDANet, self).__init__(sample_rate=sample_rate)
+        super(TDANetli, self).__init__(sample_rate=sample_rate)
 
         # Number of sources to produce
         self.in_channels = in_channels
