@@ -1,9 +1,3 @@
-###
-# Author: Kai Li
-# Date: 2022-05-26 18:09:54
-# Email: lk21@mails.tsinghua.edu.cn
-# LastEditTime: 2022-05-27 11:34:45
-###
 import torch
 import pytorch_lightning as pl
 from torch.optim.lr_scheduler import ReduceLROnPlateau

@@ -1,10 +1,3 @@
-###
-# Author: Kai Li
-# Date: 2021-06-20 00:21:33
-# LastEditors: Please set LastEditors
-# LastEditTime: 2022-05-27 11:19:51
-###
-
 from torch.optim.optimizer import Optimizer
 from torch.optim import Adam, RMSprop, SGD, Adadelta, Adagrad, Adamax, AdamW, ASGD
 from torch_optimizer import (

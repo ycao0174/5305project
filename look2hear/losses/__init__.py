@@ -1,10 +1,3 @@
-###
-# Author: Kai Li
-# Date: 2021-06-09 16:34:19
-# LastEditors: Kai Li
-# LastEditTime: 2021-07-12 20:55:35
-###
-
 from .matrix import pairwise_neg_sisdr
 from .matrix import pairwise_neg_sdsdr
 from .matrix import pairwise_neg_snr
