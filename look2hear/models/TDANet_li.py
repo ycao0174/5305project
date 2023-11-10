@@ -1,9 +1,3 @@
-###
-# Author: Kai Li
-# Date: 2022-05-03 18:11:15
-# Email: lk21@mails.tsinghua.edu.cn
-# LastEditTime: 2022-08-29 16:44:07
-###
 from audioop import bias
 
 import torch
