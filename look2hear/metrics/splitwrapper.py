@@ -1,9 +1,3 @@
-###
-# Author: Kai Li
-# Date: 2021-06-22 12:41:36
-# LastEditors: Kai Li
-# LastEditTime: 2021-08-25 12:12:04
-###
 import csv
 import torch
 import numpy as np
