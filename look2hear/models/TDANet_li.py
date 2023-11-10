@@ -1,8 +1,17 @@
+###
+# Author: Kai Li
+# Date: 2022-05-03 18:11:15
+# Email: lk21@mails.tsinghua.edu.cn
+# LastEditTime: 2022-08-29 16:44:07
+###
+from audioop import bias
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import math
 from .base_model import BaseModel
+
 
 def drop_path(x, drop_prob: float = 0.0, training: bool = False):
     if drop_prob == 0.0 or not training:
@@ -17,6 +26,7 @@ def drop_path(x, drop_prob: float = 0.0, training: bool = False):
     output = x.div(keep_prob) * random_tensor
     return output
 
+
 class DropPath(nn.Module):
     """Drop paths (Stochastic Depth) per sample  (when applied in main path of residual blocks).
     """
@@ -27,6 +37,7 @@ class DropPath(nn.Module):
 
     def forward(self, x):
         return drop_path(x, self.drop_prob, self.training)
+
 
 class _LayerNorm(nn.Module):
     """Layer Normalization base class."""
@@ -44,6 +55,7 @@ class _LayerNorm(nn.Module):
 
 def GlobLN(nOut):
     return nn.GroupNorm(1, nOut, eps=1e-8)
+
 
 class ConvNormAct(nn.Module):
     """
@@ -71,6 +83,7 @@ class ConvNormAct(nn.Module):
         output = self.norm(output)
         return self.act(output)
 
+
 class ConvNorm(nn.Module):
     """
     This class defines the convolution layer with normalization and PReLU activation
@@ -94,6 +107,7 @@ class ConvNorm(nn.Module):
         output = self.conv(input)
         return self.norm(output)
 
+
 class NormAct(nn.Module):
     """
     This class defines a normalization and PReLU activation
@@ -111,6 +125,7 @@ class NormAct(nn.Module):
     def forward(self, input):
         output = self.norm(input)
         return self.act(output)
+
 
 class DilatedConv(nn.Module):
     """
@@ -138,6 +153,7 @@ class DilatedConv(nn.Module):
 
     def forward(self, input):
         return self.conv(input)
+
 
 class DilatedConvNorm(nn.Module):
     """
@@ -169,6 +185,7 @@ class DilatedConvNorm(nn.Module):
         output = self.conv(input)
         return self.norm(output)
 
+
 class Mlp(nn.Module):
     def __init__(self, in_features, hidden_size, drop=0.1):
         super().__init__()
@@ -188,6 +205,7 @@ class Mlp(nn.Module):
         x = self.fc2(x)
         x = self.drop(x)
         return x
+
 
 class PositionalEncoding(nn.Module):
     def __init__(self, in_channels, max_length):
@@ -209,6 +227,7 @@ class PositionalEncoding(nn.Module):
         x = x + self.pe[:, : x.size(1)]
         return x
 
+
 class MultiHeadAttention(nn.Module):
     def __init__(self, in_channels, n_head, dropout, is_casual):
         super().__init__()
@@ -227,6 +246,7 @@ class MultiHeadAttention(nn.Module):
         output = self.norm(output + self.dropout(output))
         return output.transpose(1, 2)
 
+
 class GlobalAttention(nn.Module):
     def __init__(self, in_chan, out_chan, drop_path) -> None:
         super().__init__()
@@ -238,6 +258,7 @@ class GlobalAttention(nn.Module):
         x = x + self.drop_path(self.attn(x))
         x = x + self.drop_path(self.mlp(x))
         return x
+
 
 class LA(nn.Module):
     def __init__(self, inp: int, oup: int, kernel: int = 1) -> None:
@@ -368,17 +389,6 @@ class Recurrent(nn.Module):
                 x = self.unet(self.concat_block(mixture + x))
         return x
 
-class WaveNetBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, kernel_size):
-        super(WaveNetBlock, self).__init__()
-        self.conv = nn.Conv1d(in_channels, out_channels, kernel_size, padding=kernel_size // 2)
-        self.bn = nn.BatchNorm1d(out_channels)
-        self.activation = nn.ReLU()
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.bn(x)
-        return self.activation(x)
 
 class TDANet(BaseModel):
     def __init__(
@@ -390,8 +400,6 @@ class TDANet(BaseModel):
         enc_kernel_size=21,
         num_sources=2,
         sample_rate=16000,
-        # New parameters for dilated convolutions
-        dilation_rates=[1, 2, 4, 8],  # dilation rates for different layers
     ):
         super(TDANet, self).__init__(sample_rate=sample_rate)
 
@@ -410,19 +418,15 @@ class TDANet(BaseModel):
         ) // math.gcd(self.enc_kernel_size // 4, 4 ** self.upsampling_depth)
 
         # Front end
-        self.encoder = nn.ModuleList([
-            nn.Conv1d(
-                in_channels=1 if i == 0 else self.enc_num_basis,
-                out_channels=self.enc_num_basis,
-                kernel_size=self.enc_kernel_size,
-                stride=self.enc_kernel_size // 4,
-                padding=self.enc_kernel_size // 2,
-                dilation=dilation_rates[i],
-                bias=False
-            ) for i in range(len(dilation_rates))
-        ])
-        for conv in self.encoder:
-            torch.nn.init.xavier_uniform_(conv.weight)
+        self.encoder = nn.Conv1d(
+            in_channels=1,
+            out_channels=self.enc_num_basis,
+            kernel_size=self.enc_kernel_size,
+            stride=self.enc_kernel_size // 4,
+            padding=self.enc_kernel_size // 2,
+            bias=False,
+        )
+        torch.nn.init.xavier_uniform_(self.encoder.weight)
 
         # Norm before the rest, and apply one more dense layer
         self.ln = GlobLN(self.enc_num_basis)
@@ -432,15 +436,12 @@ class TDANet(BaseModel):
 
         # Separation module
         self.sm = Recurrent(out_channels, in_channels, upsampling_depth, num_blocks)
-        self.sm_bn = nn.ModuleList([nn.BatchNorm1d(out_channels) for _ in range(num_blocks)])
 
-        # Back end with WaveNet-like decoder blocks (Modification 10)
-        self.decoder_blocks = nn.ModuleList([
-            WaveNetBlock(self.enc_num_basis * num_sources, self.enc_num_basis * num_sources, kernel_size=3)
-            for _ in range(upsampling_depth)
-        ])
+        mask_conv = nn.Conv1d(out_channels, num_sources * self.enc_num_basis, 1)
+        self.mask_net = nn.Sequential(nn.PReLU(), mask_conv)
 
-        self.final_decoder = nn.ConvTranspose1d(
+        # Back end
+        self.decoder = nn.ConvTranspose1d(
             in_channels=self.enc_num_basis * num_sources,
             out_channels=num_sources,
             kernel_size=self.enc_kernel_size,
@@ -449,8 +450,7 @@ class TDANet(BaseModel):
             groups=1,
             bias=False,
         )
-        torch.nn.init.xavier_uniform_(self.final_decoder.weight)
-
+        torch.nn.init.xavier_uniform_(self.decoder.weight)
         self.mask_nl_class = nn.ReLU()
 
     def pad_input(self, input, window, stride):
