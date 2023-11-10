@@ -26,14 +26,14 @@ This project involves training a modified model for speech separation based on t
 - Command: `python audio_test.py --conf_dir=conf.yml`.
 - Configuration details can be found in `config.yml`.
 - 
-## Inference
+## Demo
 - Use `inference.py` for single audio file separation.
 - Command: `python inference.py --audio_path='your test audio dir' --output_dir='save file to ur dir' --record_duration='default:5s'`.
 - This script separates existing audio files or, if `audio_path` does not exist, starts recording.
 
 ## Modified TDANet Model
 - Our modified version of the model from the original TDANet is stored in `TDANet.py`.
-- The original model can be found in `look2hear/models/TDANet.py`.
+- The original model can be found in `look2hear/models/TDANetli.py`.
 
 ## References and Acknowledgements
 - Some of the model and evaluation code references [TDANet by JusperLee](https://github.com/JusperLee/TDANet).
